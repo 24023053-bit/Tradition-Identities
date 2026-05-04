@@ -64,7 +64,7 @@ export class Map01 {
     floorData.forEach(data => {
             // 1. Mesh tàng hình để Raycast click di chuyển
             const geo = new THREE.BoxGeometry(data.size.x, 0.2, data.size.z);
-            const mat = new THREE.MeshBasicMaterial({ visible: true, wireframe: true }); //tạo vật liệu cho floor 
+            const mat = new THREE.MeshBasicMaterial({ visible: false, wireframe: false }); //tạo vật liệu cho floor 
             const mesh = new THREE.Mesh(geo, mat); // tạo thành object trong game
             
             // Chuyển đổi tọa độ Blender sang Three.js (nhân scale 0.7)

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traditional Identity</title>
+    <link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Status Bar - Thanh màu đã thu thập -->
+    <div id="status-bar">
+        <div class="color-slot" id="slot-0"></div>
+        <div class="color-slot" id="slot-1"></div>
+        <div class="color-slot" id="slot-2"></div>
+    </div>
+
+    <div id="start-screen" class="overlay">
+        <h1>To Color Your World</h1>
+        <button onclick="window.game?.start()">Bắt đầu phiêu lưu</button>
+    </div>
+
+    <!-- Death Screen -->
+    <div id="death-screen" class="overlay" style="display: none;">
+        <h2>Ký ức bị đứt đoạn...</h2>
+        <p>Bạn có muốn bắt đầu lại?</p>
+        <div class="button-group">
+            <button onclick="window.game?.respawn(true)">Có</button>
+            <button onclick="window.game?.respawn(false)">Không</button>
+        </div>
+    </div>
+
+    <!-- Puzzle Overlay -->
+    <div id="puzzle-overlay" class="overlay" style="display: none;">
+        <h2>Mảnh Ghép Ký Ức</h2>
+        <p id="puzzle-text">Bạn đã tìm thấy một màu sắc cổ xưa...</p>
+        <button onclick="window.game?.solvePuzzle()">Giải Mã Ký Ức</button>
+    </div>
+
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    overflow: hidden;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #000;
+}
+
+#game-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    outline: none;
+}
+
+.overlay {
+    position: absolute;
+    inset: 0;
+    background: rgb(0, 0, 0);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    z-index: 100;
+    text-align: center;
+}
+
+.overlay h1 {
+    font-size: 3.8em;
+    color: #00f0ff;
+    margin-bottom: 30px;
+    text-shadow: 0 0 20px #00f0ff;
+}
+
+.overlay button {
+    padding: 16px 50px;
+    font-size: 1.4em;
+    background: #00d2ff;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.overlay button:hover {
+    background: #000000;
+    transform: scale(1.1);
+}
+
+#status-bar {
+    position: absolute;
+    top: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    padding: 4px 20px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50px;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.2);
+    z-index: 50;
+}
+
+.color-slot {
+    width: 40px;
+    height: 40px;
+    border-radius: 40%;
+    background: rgba(255,255,255,0.1);
+    border: 3px solid rgba(255,255,255,0.3);
+    transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.color-slot.active {
+    transform: scale(1.35);
+    box-shadow: 0 0 30px currentColor;
+    border-color: #ffffff;
+}
+
+/* ─────────────────────────────────────────
+   LOADING SCREEN
+───────────────────────────────────────── */
+
+#loading-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+}
+
+/* Nền tối mờ phía sau */
+#loading-screen .loading-bg {
+    position: absolute;
+    inset: 0;
+    background: rgba(5, 8, 20, 0.92);
+    backdrop-filter: blur(6px);
+}
+
+/* Khối nội dung giữa màn hình */
+#loading-screen .loading-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Ảnh loading.png — hiển thị to, có pulse nhẹ */
+#loading-screen .loading-img {
+    width: clamp(160px, 22vw, 280px);
+    height: auto;
+    object-fit: contain;
+    animation: loading-pulse 2s ease-in-out infinite;
+    filter: drop-shadow(0 0 24px rgba(255, 200, 80, 0.5));
+}
+
+@keyframes loading-pulse {
+    0%, 100% { transform: scale(1);     opacity: 1;    }
+    50%       { transform: scale(1.05); opacity: 0.85; }
+}
+
+/* Tên bản đồ */
+#loading-screen .loading-map-name {
+    font-size: clamp(1.2rem, 3vw, 1.8rem);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: #ffe8a0;
+    text-shadow: 0 0 18px rgba(255, 200, 80, 0.7);
+    text-transform: uppercase;
+}
+
+/* Thanh progress */
+#loading-screen .loading-bar-wrap {
+    width: clamp(200px, 30vw, 360px);
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 99px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.15);
+}
+
+#loading-screen .loading-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #ffb830, #ffe08a, #ffb830);
+    background-size: 200% 100%;
+    border-radius: 99px;
+    transition: width 0.15s ease;
+    animation: bar-shimmer 1.6s linear infinite;
+}
+
+@keyframes bar-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Chữ tip nhỏ phía dưới */
+#loading-screen .loading-tip {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 0.06em;
+}

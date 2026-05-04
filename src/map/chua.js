@@ -6,7 +6,7 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import modelUrl from '../assets/chua.glb?url';
 
 // 🔧 Bật true để thấy wireframe debug
-const DEBUG = false;
+const DEBUG = true;
 
 export class chua {
     constructor(scene, world) {
@@ -109,22 +109,23 @@ export class chua {
 
     createManualFloors() {
         this.addFloor({
-            sx: 90, sz: 90,
-            px: 0, py: -0.5, pz: 0,   // ← nâng lên từ -4.5 lên -0.5
+            sx: 30, sz: 30,
+            px: -65, py: -1.5, pz: 0,   
             color: 0x00ff00
         });
 
         this.addRamp({
-            sx: 7,      // chiều dài theo X
-            sz: 3.5,    // chiều rộng theo Z
-            px: -6,  py: 1.5,  pz: 0,   // ← dịch sang X-, y giữa dốc
+            sx: 35,      // chiều dài theo X
+            sz: 5,    // chiều rộng theo Z
+            px: -45,  py: 1.5,  pz: 0,   // ← dịch sang X-, y giữa dốc
             angleRad: 0.45,               // ← dốc lên về X+ (chiều đi lên chùa)
             color: 0xff8800
         });
 
+        //tầng 2
         this.addFloor({
-            sx: 12, sz: 12,
-            px: 0, py: 3.5, pz: 0,    // ← hạ từ 10 xuống 3.5
+            sx: 30, sz: 30,
+            px: 3, py: 15, pz: 0,    // ← hạ từ 10 xuống 3.5
             color: 0x0088ff
         });
     }

@@ -77,6 +77,33 @@ export class Game {
         this.ui.reset();
     }
 
+    function () {
+        const bar  = document.getElementById('loading-bar-fill');
+        const tip  = document.getElementById('loading-tip');
+        const btn  = document.getElementById('loading-start-btn');
+        if (!bar) return;
+
+        const tips = ['Đang tải thế giới...', 'Pha màu sắc...', 'Chuẩn bị hành trình...', 'Gần xong rồi...'];
+        let p = 0, ti = 0;
+
+        const iv = setInterval(() => {
+            const step = p < 60 ? 2.2 : p < 85 ? 0.9 : 0.3;
+            p = Math.min(p + step, 99);
+            bar.style.width = p.toFixed(1) + '%';
+
+            if (p > 25 && ti < 1) { ti = 1; tip.textContent = tips[1]; }
+            if (p > 55 && ti < 2) { ti = 2; tip.textContent = tips[2]; }
+            if (p > 82 && ti < 3) { ti = 3; tip.textContent = tips[3]; }
+        }, 55);
+
+        window.addEventListener('load', () => {
+            clearInterval(iv);
+            bar.style.width = '100%';
+            tip.textContent = 'Sẵn sàng!';
+            setTimeout(() => { btn.style.display = 'block'; }, 400);
+        });
+    }
+
     clearScene() {
         const toRemove = [];
         this.scene.traverse((obj) => {

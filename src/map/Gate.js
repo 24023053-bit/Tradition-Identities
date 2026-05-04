@@ -50,7 +50,7 @@ export class Gate {
 
         const material = new THREE.MeshBasicMaterial({
             color: 0xff0000,
-            wireframe: false
+            wireframe: true
         });
 
         const debugBox = new THREE.Mesh(

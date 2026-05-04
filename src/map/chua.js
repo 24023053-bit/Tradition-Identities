@@ -109,32 +109,32 @@ export class chua {
 
     createManualFloors() {
         this.addFloor({
-            sx: 30, sz: 30,
-            px: -65, py: -1.5, pz: 0,   
+            sx: 110, sz: 110,
+            px: 15, py: -1.5, pz: 0,   
             color: 0x00ff00
         });
 
         this.addRamp({
             sx: 35,      // chiều dài theo X
             sz: 5,    // chiều rộng theo Z
-            px: -45,  py: 1.5,  pz: 0,   // ← dịch sang X-, y giữa dốc
+            px: -30,  py: 1.5,  pz: 0,   // ← dịch sang X-, y giữa dốc
             angleRad: 0.45,               // ← dốc lên về X+ (chiều đi lên chùa)
             color: 0xff8800
         });
 
         //tầng 2
         this.addFloor({
-            sx: 30, sz: 30,
-            px: 3, py: 15, pz: 0,    // ← hạ từ 10 xuống 3.5
+            sx: 30, sz: 30,y: 5, 
+            px: 3, py: 12, pz: 0,    // ← hạ từ 10 xuống 3.5
             color: 0x0088ff
         });
     }
 
     createColorItems() {
         const locations = [
-            { name: "Sân trái",  x: -7,  py: 0.9,  z:  5,  color: 0xff0088 },
-            { name: "Sân phải",  x:  7,  py: 0.9,  z: -5,  color: 0x00ffff },
-            { name: "Sàn chùa",  x:  0,  py: 6.75, z:  0,  color: 0xffff44 }
+            { name: "Sân trái",  x: -40,  py: -1,  z:  5,  color: 0xff0088 },
+            { name: "Sân phải",  x:  20,  py: 1,  z: 30,  color: 0x00ffff },
+            { name: "Sàn chùa",  x:  0,  py: 13, z:  0,  color: 0xffff44 }
         ];
 
         locations.forEach(loc => {

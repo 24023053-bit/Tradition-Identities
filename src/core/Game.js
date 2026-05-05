@@ -79,6 +79,9 @@ export class Game {
 
         this.grayscalePass = new ShaderPass(LuminosityShader);
         this.grayscalePass.enabled = true; 
+        
+        this.grayscalePass.uniforms['opacity'] = { value: 1.5 }; 
+
         this.composer.addPass(this.grayscalePass);
     }
 

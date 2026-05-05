@@ -6,7 +6,7 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import modelUrl from '../assets/chua.glb?url';
 
 // 🔧 Bật true để thấy wireframe debug
-const DEBUG = true;
+const DEBUG = false;
 
 export class chua {
     constructor(scene, world) {

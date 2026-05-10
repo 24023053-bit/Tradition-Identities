@@ -12,38 +12,40 @@ import { Vm } from '../map/Vm.js';
 import { chua } from '../map/chua.js';
 import { PhysicsManager } from '../systems/PhysicsManager.js';
 import { UIManager } from '../systems/UIManager.js';
+import { QUEST_DATA } from './Quests.js';
 
 export class Game {
     constructor() {
-        this.clock = new THREE.Clock();
-        this.collected = [];
-        this.currentLevel = null;
-        this.levelName = 'Gate';
-        this.isTransitioning = false;
-        this.isDead = false;
-        this._persistentObjects = new Set();
-        this._tempV3 = new THREE.Vector3();
+        this.clock = new THREE.Clock(); //tính thời gian frame
+        this.collected = []; //mảng chứa item đã nhặt
+        this.currentLevel = null; // lưu map hiện tại
+        this.levelName = 'Gate'; // bắt đầu bằng map cổng
+        this.isTransitioning = false; // kiểm tra chuyển map
+        this.isDead = false; //chớt
+        this._persistentObjects = new Set(); // list object cần đổi khi chuyển map
+        this._tempV3 = new THREE.Vector3(); // tọa độ 3d của vật thể
+        this.isQuizOpen = false;
     }
 
     init() {
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x0f0f1e);
+        this.scene.background = new THREE.Color(0x000000); 
 
         this.renderer = new THREE.WebGLRenderer({
             canvas: document.getElementById('game-canvas'),
-            antialias: true
+            antialias: true //chống răng cưa 
         });
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        this.renderer.shadowMap.enabled = true;
+        this.renderer.setSize(window.innerWidth, window.innerHeight); //kích thước cửa sổ theo kích thước màn hình trình duyệt
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // tỷ lệ pixel của màn hình
+        this.renderer.shadowMap.enabled = true; // đổ bóng 
 
-        const aspect = window.innerWidth / window.innerHeight;
-        const viewSize = 20;
+        const aspect = window.innerWidth / window.innerHeight; // tỷ lệ màn hình
+        const viewSize = 20; //độ rộng mà camera soi tới 
         this.camera = new THREE.OrthographicCamera(
-            -viewSize * aspect, viewSize * aspect,
+            -viewSize * aspect, viewSize * aspect, 
             viewSize, -viewSize, -100, 2000
         );
-        this.camera.position.set(15, 20, 15);
+        this.camera.position.set(15, 20, 15); // vị trí camera
         this.camera.lookAt(0, 0, 0);
 
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
@@ -60,7 +62,7 @@ export class Game {
         this._persistentObjects.add(sun.uuid);
 
         this.physics = new PhysicsManager();
-        this.ui = new UIManager();
+        this.ui = new UIManager(this);
         this.player = new Player(this.scene, this.physics.world);
         this._persistentObjects.add(this.player.mesh.uuid);
 
@@ -69,6 +71,12 @@ export class Game {
 
         window.addEventListener('mousedown', (e) => this.handleClick(e));
         window.addEventListener('resize', () => this.onWindowResize());
+        window.addEventListener('click', (event) => {
+            // Giả sử raycaster trả về vật thể bị click là 'interactedObject'
+            const objectName = interactedObject.name; 
+            
+            questManager.checkObjective(objectName);
+            });
 
         this.animate();
     }
@@ -126,6 +134,12 @@ export class Game {
         }
     }
 
+    // Giả sử player chạm vào vùng trigger của Chùa
+    onPlayerEnterChuaArea() {
+        const quest = QUEST_DATA.map_chua.quests[0];
+        this.uiManager.showQuiz(quest);
+    }
+
     loadLevel(level) {
         this.clearScene();
         this.levelName = level;
@@ -134,6 +148,7 @@ export class Game {
 
         if (this.grayscalePass) this.grayscalePass.enabled = true;
 
+        // chuyển map 
         switch(level) {
             case 'Gate': this.currentLevel = new Gate(this.scene, this.physics.world); break;
             case 'Map01': this.currentLevel = new Map01(this.scene, this.physics.world); break;
@@ -209,18 +224,49 @@ export class Game {
         }, 1000);
     }
 
-    checkItemCollision() {
-        if (this.levelName === 'Gate' || !this.currentLevel?.colorItems || this.isTransitioning) return;
-        const playerPos = this.player.body.position;
-        this.currentLevel.colorItems.forEach((item) => {
-            if (item.collected) return;
-            item.model.getWorldPosition(this._tempV3);
-            const distXZ = Math.sqrt(Math.pow(playerPos.x - this._tempV3.x, 2) + Math.pow(playerPos.z - this._tempV3.z, 2));
-            if (distXZ < 1.2 && Math.abs(playerPos.y - this._tempV3.y) < 2) {
-                this.handleCollect(item);
-            }
-        });
+    // Thay toàn bộ hàm checkItemCollision
+checkItemCollision() {
+    if (this.levelName === 'Gate' || !this.currentLevel?.colorItems || this.isTransitioning) return;
+    if (this.isQuizOpen) return; // đang quiz thì không check tiếp
+
+    const playerPos = this.player.body.position;
+    this.currentLevel.colorItems.forEach((item) => {
+        if (item.collected) return;
+        item.model.getWorldPosition(this._tempV3);
+        const distXZ = Math.sqrt(
+            Math.pow(playerPos.x - this._tempV3.x, 2) +
+            Math.pow(playerPos.z - this._tempV3.z, 2)
+        );
+        if (distXZ < 1.2 && Math.abs(playerPos.y - this._tempV3.y) < 2) {
+            this._triggerItemQuiz(item);
+        }
+    });
+}
+
+// Thêm hàm mới này vào Game.js
+_triggerItemQuiz(item) {
+    this.isQuizOpen = true;
+    this.player.target = null; // dừng player lại
+    if (this.player.body) this.player.body.velocity.set(0, 0, 0);
+
+    // Lấy quiz theo thứ tự item đã collect (0, 1, 2)
+    const levelData = QUEST_DATA[this.levelName];
+    const quizIndex = this.collected.length; // item thứ mấy
+    const quiz = levelData?.itemQuizzes?.[quizIndex];
+
+    if (!quiz) {
+        // Nếu không có quiz thì collect thẳng
+        this.isQuizOpen = false;
+        this.handleCollect(item);
+        return;
     }
+
+    // Hiện quiz, truyền callback khi trả lời đúng
+    this.ui.showQuiz(quiz, () => {
+        this.isQuizOpen = false;
+        this.handleCollect(item);
+    });
+}
 
     checkPortalTrigger() {
         if (this.levelName !== 'Gate' || this.isTransitioning || !this.currentLevel?.portalTrigger) return;

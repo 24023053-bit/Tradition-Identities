@@ -132,11 +132,9 @@ export class Game {
     }
     
     handleClick(event) {
+        // Giữ nguyên các điều kiện chặn click của bạn
         if (!this.player.alive || event.button !== 0 || this.isDead || this.isTransitioning) return;
         if (!this.currentLevel?.landMeshes) return;
-
-         console.log('landMeshes count:', this.currentLevel.landMeshes.length); // thêm dòng này
-        console.log('landMeshes:', this.currentLevel.landMeshes.map(m => m.name)); // thêm dòng này
 
         const mouse = new THREE.Vector2(
             (event.clientX / window.innerWidth) * 2 - 1,
@@ -150,53 +148,68 @@ export class Game {
         const intersects = raycaster.intersectObjects(this.currentLevel.landMeshes);
 
         if (intersects.length > 0) {
-            // Sắp xếp các điểm va chạm theo tọa độ Y giảm dần (ưu tiên điểm cao nhất/tầng 2)[cite: 5]
+            // Sắp xếp các điểm va chạm theo tọa độ Y giảm dần (ưu tiên tầng cao)
             intersects.sort((a, b) => b.point.y - a.point.y);
 
             const targetPoint = intersects[0].point;
             
-            // Truyền cả x, z và độ cao y để nhân vật nhắm đúng tầng[cite: 5]
+            // 1. Di chuyển nhân vật
             this.player.setTarget(targetPoint.x, targetPoint.z, targetPoint.y);
+            
+            // 2. Kích hoạt hiệu ứng visual (Hàm này giờ sẽ hoạt động)
+            this.showClickEffect(targetPoint.x, targetPoint.y, targetPoint.z);
             
             console.log(`🎯 Di chuyển tới: x:${targetPoint.x.toFixed(1)}, y:${targetPoint.y.toFixed(1)}, z:${targetPoint.z.toFixed(1)}`);
         }
     }
 
-    // hàm hiệu ứng click
     showClickEffect(x, y, z) {
-        const geometry = new THREE.RingGeometry(0.1, 0.3, 16);
+        // Tạo hình tròn dạng nhẫn (Ring)
+        const geometry = new THREE.RingGeometry(0.1, 0.4, 32);
         const material = new THREE.MeshBasicMaterial({ 
             color: 0x00ddff, 
             side: THREE.DoubleSide,
             transparent: true,
-            opacity: 1
+            opacity: 1,
+            depthWrite: false // Ngăn lỗi nhấp nháy khi đè lên sàn
         });
+        
         const ring = new THREE.Mesh(geometry, material);
-        ring.position.set(x, y + 0.1, z);
-        ring.rotation.x = -Math.PI / 2; // nằm ngang
+        
+        // Đặt vị trí: y + 0.15 để đảm bảo nó luôn nằm trên mặt sàn (landMeshes)
+        ring.position.set(x, y + 0.15, z);
+        ring.rotation.x = -Math.PI / 2; // Nằm ngang song song với sàn
         this.scene.add(ring);
 
-        // Animation mở rộng rồi mờ dần
+        // Animation logic
         const startTime = performance.now();
-        const duration = 600; // ms
+        const duration = 500; // Hiệu ứng diễn ra trong 0.5 giây
 
-        const animate = () => {
+        // Dùng arrow function để "this" luôn trỏ về class Game
+        const animateClick = () => {
             const elapsed = performance.now() - startTime;
-            const t = elapsed / duration; // 0 → 1
+            const t = Math.min(elapsed / duration, 1); // Clamp giá trị từ 0 đến 1
 
             if (t >= 1) {
+                // Dọn dẹp sạch sẽ để tránh tràn bộ nhớ (Memory Leak)
                 this.scene.remove(ring);
-                ring.geometry.dispose();
-                ring.material.dispose();
+                geometry.dispose();
+                material.dispose();
                 return;
             }
 
-            const scale = 1 + t * 3; // phóng to
+            // Phóng to vòng tròn (từ scale 1 lên 3)
+            const scale = 1 + t * 2; 
             ring.scale.set(scale, scale, scale);
-            ring.material.opacity = 1 - t; // mờ dần
-            requestAnimationFrame(animate);
+            
+            // Mờ dần theo thời gian (từ 1 về 0)
+            ring.material.opacity = 1 - t;
+
+            // Tiếp tục vòng lặp animation cho đến khi t >= 1
+            requestAnimationFrame(animateClick);
         };
-        animate();
+
+        animateClick();
     }
 
     // Giả sử player chạm vào vùng trigger của Chùa
@@ -334,7 +347,7 @@ export class Game {
     checkLevelComplete() {
         if (this.collected.length < 3 || this.isTransitioning) return;
         if (this.levelName === 'Map01') this.transitionTo('Vm', 0, 2, 0);
-        else if (this.levelName === 'Vm') this.transitionTo('chua', 60, -26, 35);
+        else if (this.levelName === 'Vm') this.transitionTo('chua', 60, -20, 35);
         else if (this.levelName === 'chua') this.showWinScreen();
     }
 

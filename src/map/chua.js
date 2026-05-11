@@ -64,7 +64,7 @@ export class chua {
 
         if (DEBUG) {
             const dbg = new THREE.Mesh(
-                new THREE.BoxGeometry(sx, 0.2, sz),
+                new THREE.BoxGeometry(sx, 1, sz),
                 new THREE.MeshBasicMaterial({ color, wireframe: true })
             );
             dbg.position.set(px, py, pz);
@@ -107,34 +107,36 @@ export class chua {
         }
     }
 
-    createManualFloors() {
+    createManualFloors() { 
+
+        //tầng 2
         this.addFloor({
-            sx: 250, sz: 200,
+            sx: 35, sz: 30,
+            px: 3, py: -1.5, pz: 0,    // ← hạ từ 10 xuống 3.5
+            color: 0x0088ff
+        });
+
+        // tầng trệt
+        this.addFloor({
+            sx: 300, sz: 300,
             px: 20, py: -26, pz: 0,   
             color: 0x00ff00
         });
 
         this.addRamp({
-            sx: 100,      // chiều dài theo X
-            sz: 7,    // chiều rộng theo Z
-            px: -60,  py: -19,  pz: 0,   // ← dịch sang X-, y giữa dốc
-            angleRad: 0.45,               // ← dốc lên về X+ (chiều đi lên chùa)
+            sx: 65,  // chiều dài theo X
+            sz: 8,    // chiều rộng theo Z
+            px: -45,  py: -17,  pz: 0,   // ← dịch sang X-, y giữa dốc
+            angleRad: 0.5,        // ← dốc lên về X+ (chiều đi lên chùa)
             color: 0xff8800
-        });
-
-        //tầng 2
-        this.addFloor({
-            sx: 40, sz: 40,y: 5, 
-            px: 3, py: 0, pz: 0,    // ← hạ từ 10 xuống 3.5
-            color: 0x0088ff
         });
     }
 
     createColorItems() {
         const locations = [
             { name: "Sân trái",  x: -75,  py: -26,  z:  5,  color: 0xff0088 }, // màu hồng
-            { name: "Sàn chùa",  x:  10,  py: 1,  z: 2,  color: 0x00ffff }, // màu lam
-            { name: "Sàn chùa",  x:  5,  py: 1, z:  -10,  color: 0xffff44 } // màu vàng
+            { name: "Sàn chùa",  x:  10,  py: 1,  z: -5,  color: 0x00ffff }, // màu lam
+            { name: "Sàn chùa",  x:  5,  py: -26, z:  -10,  color: 0xffff44 } // màu vàng
         ];
 
         locations.forEach(loc => {

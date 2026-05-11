@@ -71,13 +71,6 @@ export class Game {
 
         window.addEventListener('mousedown', (e) => this.handleClick(e));
         window.addEventListener('resize', () => this.onWindowResize());
-        window.addEventListener('click', (event) => {
-            // Giả sử raycaster trả về vật thể bị click là 'interactedObject'
-            const objectName = interactedObject.name; 
-            
-            questManager.checkObjective(objectName);
-            });
-
         this.animate();
     }
 
@@ -85,18 +78,37 @@ export class Game {
         this.composer = new EffectComposer(this.renderer);
         this.composer.addPass(new RenderPass(this.scene, this.camera));
 
-        this.grayscalePass = new ShaderPass(LuminosityShader);
-        this.grayscalePass.enabled = true; 
-        
-        this.grayscalePass.uniforms['opacity'] = { value: 1.5 }; 
+        // Custom shader blend màu gốc + grayscale
+        const GrayscaleBlendShader = {
+            uniforms: {
+                tDiffuse: { value: null },
+                amount: { value: 0.95 } // 0 = màu gốc, 1 = đen trắng hoàn toàn
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform sampler2D tDiffuse;
+                uniform float amount;
+                varying vec2 vUv;
+                void main() {
+                    vec4 color = texture2D(tDiffuse, vUv);
+                    float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+                    gl_FragColor = vec4(mix(color.rgb, vec3(gray), amount), color.a);
+                }
+            `
+        };
 
+        this.grayscalePass = new ShaderPass(GrayscaleBlendShader);
+        this.grayscalePass.enabled = true;
         this.composer.addPass(this.grayscalePass);
     }
 
     start() {
-        const startScreen = document.getElementById('start-screen');
-        if (startScreen) startScreen.style.display = 'none';
-
         this.player.reset();
         this.collected = [];
         this.isDead = false;
@@ -196,6 +208,76 @@ export class Game {
         };
     }
 
+    _getSpawnPoint() {
+    switch (this.levelName) {
+        case 'Map01': return { x: -18, y: 3, z: 20 };
+        case 'Vm':    return { x: 0,   y: 2, z: 21 };
+        case 'chua':  return { x: 0,   y: 2, z: 35 };
+        default:      return { x: 0,   y: 2, z: 0  };
+    }
+}
+
+    _triggerItemQuiz(item) {
+        this.isQuizOpen = true;
+        this.player.target = null;
+        if (this.player.body) {
+            this.player.body.velocity.x = 0;
+            this.player.body.velocity.y = 0;
+            this.player.body.velocity.z = 0;
+        }
+
+        const levelData = QUEST_DATA[this.levelName];
+        const quizIndex = this.collected.length;
+        const quiz = levelData?.itemQuizzes?.[quizIndex];
+
+        if (!quiz) {
+            this.isQuizOpen = false;
+            this.handleCollect(item);
+            return;
+        }
+
+        this.ui.showQuiz(
+            quiz,
+            // Đúng → collect
+            () => {
+                this.isQuizOpen = false;
+                this.handleCollect(item);
+            },
+            // Sai → teleport về spawn
+            () => {
+                this.isQuizOpen = false;
+                const spawn = this._getSpawnPoint();
+
+                this.collected=[]; // reset collect về 0
+                this.ui.reset(); // xóa các slot màu trên UI
+
+                if (this.currentLevel?.colorItems){
+                    this.currentLevel.colorItems.forEach(item=>{
+                        item.collected=false; //reset trạng thái collect của item
+                        item.model.visible=true; // hiện lại item trên map
+                    });
+                }
+
+                this.player.body.position.x = spawn.x;
+                this.player.body.position.y = spawn.y;
+                this.player.body.position.z = spawn.z;
+
+                this.player.body.velocity.x = 0;
+                this.player.body.velocity.y = 0;
+                this.player.body.velocity.z = 0;
+                this.player.body.angularVelocity.x = 0;
+                this.player.body.angularVelocity.y = 0;
+                this.player.body.angularVelocity.z = 0;
+
+                this.player.body.wakeUp();
+                this.player.mesh.position.copy(this.player.body.position);
+                this.player.target = null;
+
+                if (this.grayscalePass)this.grayscalePass.enabled=true; // bật lại grayscale
+            }
+        );
+    }
+
     checkLevelComplete() {
         if (this.collected.length < 3 || this.isTransitioning) return;
         if (this.levelName === 'Map01') this.transitionTo('Vm', 0, 2, 21);
@@ -225,48 +307,23 @@ export class Game {
     }
 
     // Thay toàn bộ hàm checkItemCollision
-checkItemCollision() {
-    if (this.levelName === 'Gate' || !this.currentLevel?.colorItems || this.isTransitioning) return;
-    if (this.isQuizOpen) return; // đang quiz thì không check tiếp
+    checkItemCollision() {
+        if (this.levelName === 'Gate' || !this.currentLevel?.colorItems || this.isTransitioning) return;
+        if (this.isQuizOpen) return; // đang quiz thì không check tiếp
 
-    const playerPos = this.player.body.position;
-    this.currentLevel.colorItems.forEach((item) => {
-        if (item.collected) return;
-        item.model.getWorldPosition(this._tempV3);
-        const distXZ = Math.sqrt(
-            Math.pow(playerPos.x - this._tempV3.x, 2) +
-            Math.pow(playerPos.z - this._tempV3.z, 2)
-        );
-        if (distXZ < 1.2 && Math.abs(playerPos.y - this._tempV3.y) < 2) {
-            this._triggerItemQuiz(item);
-        }
-    });
-}
-
-// Thêm hàm mới này vào Game.js
-_triggerItemQuiz(item) {
-    this.isQuizOpen = true;
-    this.player.target = null; // dừng player lại
-    if (this.player.body) this.player.body.velocity.set(0, 0, 0);
-
-    // Lấy quiz theo thứ tự item đã collect (0, 1, 2)
-    const levelData = QUEST_DATA[this.levelName];
-    const quizIndex = this.collected.length; // item thứ mấy
-    const quiz = levelData?.itemQuizzes?.[quizIndex];
-
-    if (!quiz) {
-        // Nếu không có quiz thì collect thẳng
-        this.isQuizOpen = false;
-        this.handleCollect(item);
-        return;
+        const playerPos = this.player.body.position;
+        this.currentLevel.colorItems.forEach((item) => {
+            if (item.collected) return;
+            item.model.getWorldPosition(this._tempV3);
+            const distXZ = Math.sqrt(
+                Math.pow(playerPos.x - this._tempV3.x, 2) +
+                Math.pow(playerPos.z - this._tempV3.z, 2)
+            );
+            if (distXZ < 1.2 && Math.abs(playerPos.y - this._tempV3.y) < 2) {
+                this._triggerItemQuiz(item);
+            }
+        });
     }
-
-    // Hiện quiz, truyền callback khi trả lời đúng
-    this.ui.showQuiz(quiz, () => {
-        this.isQuizOpen = false;
-        this.handleCollect(item);
-    });
-}
 
     checkPortalTrigger() {
         if (this.levelName !== 'Gate' || this.isTransitioning || !this.currentLevel?.portalTrigger) return;

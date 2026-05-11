@@ -12,12 +12,12 @@
     <div id="quest-hud">
     <h3 id="quest-title"></h3>
     <p id="quest-desc"></p>
-    </div>
+</div>
 
-    <div id="quiz-modal" style="display: none;">
-        <h2 id="quiz-question"></h2>
-        <div id="quiz-options"></div>
-    </div>
+<div id="quiz-modal" style="display: none;">
+    <h2 id="quiz-question"></h2>
+    <div id="quiz-options"></div>
+</div>
 
     <!-- Status Bar - Thanh màu đã thu thập -->
     <div id="status-bar">
@@ -27,8 +27,13 @@
     </div>
 
     <div id="start-screen" class="overlay">
-        <h1>To Color Your World</h1>
-        <button onclick="window.game?.start()">Bắt đầu phiêu lưu</button>
+    <div id="loading-container">
+        <h1 id="loading-title">Tradition Identities</h1>
+        <div id="loading-bar-wrap">
+            <div id="loading-bar"></div>
+        </div>
+        <p id="loading-slogan">Let's color your world</p>
+        </div>
     </div>
 
     <!-- Death Screen -->

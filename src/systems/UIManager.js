@@ -29,63 +29,57 @@ export class UIManager {
         this.failOverlay = overlay;
     }
 
-    // Hiện quiz, nhận thêm callback onCorrect để game xử lý collect
-    showQuiz(quest, onCorrect) {
-        this.quizContainer.style.display = 'flex';
-        this.questionEl.innerText = quest.question;
-        this.optionsContainer.innerHTML = '';
+    // Hiện quiz
+    showQuiz(quest, onCorrect, onWrong) {  // thêm onWrong
+    this.quizContainer.style.display = 'flex';
+    this.questionEl.innerText = quest.question;
+    this.optionsContainer.innerHTML = '';
 
-        quest.options.forEach((option, index) => {
-            const btn = document.createElement('button');
-            btn.className = 'quiz-btn';
-            btn.innerText = option;
-            btn.onclick = () => this._checkAnswer(index, quest, onCorrect);
-            this.optionsContainer.appendChild(btn);
+    quest.options.forEach((option, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'quiz-btn';
+        btn.innerText = option;
+        btn.onclick = () => this._checkAnswer(index, quest, onCorrect, onWrong);  // truyền xuống
+        this.optionsContainer.appendChild(btn);
+    });
+}
+
+_checkAnswer(selectedIndex, quest, onCorrect, onWrong) {  // thêm onWrong
+    const btns = this.optionsContainer.querySelectorAll('.quiz-btn');
+
+    if (selectedIndex === quest.correctIndex) {
+        btns[selectedIndex].style.background = '#4caf50';
+        btns[selectedIndex].style.color = 'white';
+        this._showFact(quest.fact, () => {
+            this.quizContainer.style.display = 'none';
+            if (onCorrect) onCorrect();
         });
-    }
+    } else {
+        btns[selectedIndex].style.background = '#f44336';
+        btns[selectedIndex].style.color = 'white';
+        btns.forEach(b => b.disabled = true);
 
-    _checkAnswer(selectedIndex, quest, onCorrect) {
-        const btns = this.optionsContainer.querySelectorAll('.quiz-btn');
-
-        if (selectedIndex === quest.correctIndex) {
-            // Highlight đáp án đúng màu xanh
-            btns[selectedIndex].style.background = '#4caf50';
-            btns[selectedIndex].style.color = 'white';
-
-            // Hiện fact rồi đóng
-            this._showFact(quest.fact, () => {
+        this._showFact(
+            `❌ Sai rồi! Đáp án đúng: ${quest.options[quest.correctIndex]}\n💡 ${quest.fact}`,
+            () => {
                 this.quizContainer.style.display = 'none';
-                if (onCorrect) onCorrect(); // <-- game.handleCollect(item)
-            });
-        } else {
-            // Highlight sai màu đỏ, đúng màu xanh
-            btns[selectedIndex].style.background = '#f44336';
-            btns[selectedIndex].style.color = 'white';
-            btns[quest.correctIndex].style.background = '#4caf50';
-            btns[quest.correctIndex].style.color = 'white';
-
-            // Vô hiệu hóa tất cả nút
-            btns.forEach(b => b.disabled = true);
-
-            this._showFact(`❌ Sai rồi! Đáp án đúng: ${quest.options[quest.correctIndex]}\n💡 ${quest.fact}`, () => {
-                // Đặt lại để thử lại
-                this.quizContainer.style.display = 'none';
-            });
-        }
+                if (onWrong) onWrong();  // gọi teleport về spawn
+            }, 800);
     }
+}
 
-    _showFact(text, callback) {
+    _showFact(text, callback, delay=2000) {
         const factEl = document.createElement('div');
         factEl.style.cssText = `
             margin-top: 16px; padding: 12px 16px;
-            background: rgba(255,221,0,0.15); border-left: 4px solid #ffdd00;
+            background: rgba(255,221,0,0.15); border-left: 4px solid #ff8c0098;
             border-radius: 6px; color: #fff; font-size: 14px;
             white-space: pre-line; line-height: 1.5;
         `;
         factEl.innerText = text;
         this.optionsContainer.appendChild(factEl);
 
-        setTimeout(callback, 2200);
+        setTimeout(callback, delay);
     }
 
     activateSlot(index, color) {

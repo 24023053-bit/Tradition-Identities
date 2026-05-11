@@ -13,6 +13,8 @@ import { chua } from '../map/chua.js';
 import { PhysicsManager } from '../systems/PhysicsManager.js';
 import { UIManager } from '../systems/UIManager.js';
 import { QUEST_DATA } from './Quests.js';
+import bgmUrl from '../assets/audio.weba?url';
+
 
 export class Game {
     constructor() {
@@ -25,6 +27,7 @@ export class Game {
         this._persistentObjects = new Set(); // list object cần đổi khi chuyển map
         this._tempV3 = new THREE.Vector3(); // tọa độ 3d của vật thể
         this.isQuizOpen = false;
+        this.clickMarkers = [];
     }
 
     init() {
@@ -72,6 +75,16 @@ export class Game {
         window.addEventListener('mousedown', (e) => this.handleClick(e));
         window.addEventListener('resize', () => this.onWindowResize());
         this.animate();
+
+
+        this.bgm = new Audio(bgmUrl);
+        this.bgm.loop = true;
+        this.bgm.volume = 0.4;
+        this.bgm.play().catch(() => {
+            window.addEventListener('click', () => {
+                this.bgm.play();
+            }, { once: true });
+        });
     }
 
     initPostProcessing() {
@@ -82,7 +95,7 @@ export class Game {
         const GrayscaleBlendShader = {
             uniforms: {
                 tDiffuse: { value: null },
-                amount: { value: 0.95 } // 0 = màu gốc, 1 = đen trắng hoàn toàn
+                amount: { value: 0.5 } // 0 = màu gốc, 1 = đen trắng hoàn toàn
             },
             vertexShader: `
                 varying vec2 vUv;
@@ -122,6 +135,9 @@ export class Game {
         if (!this.player.alive || event.button !== 0 || this.isDead || this.isTransitioning) return;
         if (!this.currentLevel?.landMeshes) return;
 
+         console.log('landMeshes count:', this.currentLevel.landMeshes.length); // thêm dòng này
+        console.log('landMeshes:', this.currentLevel.landMeshes.map(m => m.name)); // thêm dòng này
+
         const mouse = new THREE.Vector2(
             (event.clientX / window.innerWidth) * 2 - 1,
             -(event.clientY / window.innerHeight) * 2 + 1
@@ -144,6 +160,43 @@ export class Game {
             
             console.log(`🎯 Di chuyển tới: x:${targetPoint.x.toFixed(1)}, y:${targetPoint.y.toFixed(1)}, z:${targetPoint.z.toFixed(1)}`);
         }
+    }
+
+    // hàm hiệu ứng click
+    showClickEffect(x, y, z) {
+        const geometry = new THREE.RingGeometry(0.1, 0.3, 16);
+        const material = new THREE.MeshBasicMaterial({ 
+            color: 0x00ddff, 
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 1
+        });
+        const ring = new THREE.Mesh(geometry, material);
+        ring.position.set(x, y + 0.1, z);
+        ring.rotation.x = -Math.PI / 2; // nằm ngang
+        this.scene.add(ring);
+
+        // Animation mở rộng rồi mờ dần
+        const startTime = performance.now();
+        const duration = 600; // ms
+
+        const animate = () => {
+            const elapsed = performance.now() - startTime;
+            const t = elapsed / duration; // 0 → 1
+
+            if (t >= 1) {
+                this.scene.remove(ring);
+                ring.geometry.dispose();
+                ring.material.dispose();
+                return;
+            }
+
+            const scale = 1 + t * 3; // phóng to
+            ring.scale.set(scale, scale, scale);
+            ring.material.opacity = 1 - t; // mờ dần
+            requestAnimationFrame(animate);
+        };
+        animate();
     }
 
     // Giả sử player chạm vào vùng trigger của Chùa
@@ -280,8 +333,8 @@ export class Game {
 
     checkLevelComplete() {
         if (this.collected.length < 3 || this.isTransitioning) return;
-        if (this.levelName === 'Map01') this.transitionTo('Vm', 0, 2, 21);
-        else if (this.levelName === 'Vm') this.transitionTo('chua', 0, 2, 35);
+        if (this.levelName === 'Map01') this.transitionTo('Vm', 0, 2, 0);
+        else if (this.levelName === 'Vm') this.transitionTo('chua', 60, -26, 35);
         else if (this.levelName === 'chua') this.showWinScreen();
     }
 
@@ -336,11 +389,17 @@ export class Game {
 
     checkWaterDeath() {
         if (this.levelName !== 'Map01' || this.isDead || !this.player.alive) return;
-        const playerPos = this.player.body.position;
-        if (playerPos.y < -2) { this.triggerDeath(); return; }
-        const raycaster = new THREE.Raycaster(new THREE.Vector3(playerPos.x, playerPos.y + 1, playerPos.z), new THREE.Vector3(0, -1, 0));
-        const intersects = raycaster.intersectObjects(this.currentLevel.landMeshes || [], false);
-        if (intersects.length > 0 && intersects[0].object.userData.isWater && intersects[0].distance < 1.2) {
+        const p = this.player.body.position;
+        const safe = this.currentLevel?.safezone;
+        if (!safe) return;
+
+        if (
+            p.y < safe.minY ||
+            p.x < safe.minX ||
+            p.x > safe.maxX ||
+            p.z < safe.minZ ||
+            p.z > safe.maxZ
+        ) {
             this.triggerDeath();
         }
     }
@@ -400,6 +459,24 @@ export class Game {
         const delta = Math.min(this.clock.getDelta(), 0.1);
         this.physics.update(delta);
         this.player.update(delta);
+
+        // Camera follow player - giữ nguyên góc xoay của controls
+        if (this.player.body) {
+            const playerPos = this.player.body.position;
+            
+            // Lấy offset hiện tại của camera so với target của controls
+            const offset = this.camera.position.clone().sub(this.controls.target);
+            
+            // Target mới là vị trí player
+            const newTarget = new THREE.Vector3(playerPos.x, playerPos.y, playerPos.z);
+            
+            // Lerp target về phía player
+            this.controls.target.lerp(newTarget, 0.1);
+            
+            // Camera đi theo target, giữ nguyên offset (góc xoay)
+            this.camera.position.lerp(newTarget.clone().add(offset), 0.1);
+        }
+
         this.checkItemCollision();
         this.checkPortalTrigger();
         this.checkWaterDeath();

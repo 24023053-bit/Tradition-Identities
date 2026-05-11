@@ -12,6 +12,11 @@ export class Map01 {
         this.landMeshes = [];
         this.colorItems = []; // Mảng này sẽ được Game.js quét qua mỗi frame
         this.bodies = []; // Để quản lý dispose vật lý
+
+        this.safezone={
+            minY: -1
+        };
+
         this.loadMap();
     }
 
@@ -74,7 +79,7 @@ export class Map01 {
 
     createColorItems() {
         const locations = [
-            { id: 0, name: "Trung tâm tháp", x: 20, y: 2, z: -70, color: 0xff0000 }, 
+            { id: 0, name: "Trung tâm tháp", x: 20, y: 3, z: -70, color: 0xff0000 }, 
             { id: 1, name: "Rìa tháp", x: 5, y: 2, z: -72.8, color: 0x00ff00 }, 
             { id: 2, name: "Trên cầu", x: -5.5, y: 2, z: -6, color: 0xffff00 } 
         ];

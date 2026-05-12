@@ -65,7 +65,7 @@ export class chua {
         if (DEBUG) {
             const dbg = new THREE.Mesh(
                 new THREE.BoxGeometry(sx, 1, sz),
-                new THREE.MeshBasicMaterial({ color, wireframe: true })
+                new THREE.MeshBasicMaterial({ color, wireframe: false })
             );
             dbg.position.set(px, py, pz);
             this.scene.add(dbg);
@@ -77,7 +77,7 @@ export class chua {
     addRamp({ sx, sz, px, py, pz, angleRad, color = 0xff8800 }) {
         const mesh = new THREE.Mesh(
             new THREE.BoxGeometry(sx, 0.2, sz),
-            new THREE.MeshBasicMaterial({ visible: true })
+            new THREE.MeshBasicMaterial({ visible: false })
         );
         mesh.position.set(px, py, pz);
         mesh.rotation.z = angleRad;
@@ -98,7 +98,7 @@ export class chua {
         if (DEBUG) {
             const dbg = new THREE.Mesh(
                 new THREE.BoxGeometry(sx, 0.2, sz),
-                new THREE.MeshBasicMaterial({ color, wireframe: true })
+                new THREE.MeshBasicMaterial({ color, wireframe: false })
             );
             dbg.position.set(px, py, pz);
             dbg.rotation.z = angleRad;
@@ -135,7 +135,7 @@ export class chua {
     createColorItems() {
         const locations = [
             { name: "Sân trái",  x: -75,  py: -26,  z:  5,  color: 0xff0088 }, // màu hồng
-            { name: "Sàn chùa",  x:  10,  py: 1,  z: -5,  color: 0x00ffff }, // màu lam
+            { name: "Sàn chùa",  x:  10,  py: -26,  z: -5,  color: 0x00ffff }, // màu lam
             { name: "Sàn chùa",  x:  5,  py: -26, z:  -10,  color: 0xffff44 } // màu vàng
         ];
 
